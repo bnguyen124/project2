@@ -103,6 +103,7 @@ Guns%>% ggplot(aes(murder,violent,color=law)) + geom_point()
 clust <- num.guns %>% mutate(cluster = as.factor(gun_pam$clustering))
 clust %>% ggpairs(columns = 2:7, aes(color = cluster))
 
+plot(gun_pam, which = 2)
 
 #Summarize Cluster
 clust %>% group_by(cluster) %>% summarize_if(is.numeric,mean,na.rm=T)
@@ -310,13 +311,8 @@ mean(diags)
 ```{R}
 library(reticulate)
 use_python("/usr/bin/python3", required = F)
-
-# r code 
 hi <- "Hello"
-cat(c(hi, py$hi))
-
-sent_1 <- " The Quick Brown Fox Jumps"
-cat(c(sent_1, py$sent_2))
+sent_1 <- " Merry Christmas"
 ```
 
 ```{python}
@@ -324,8 +320,14 @@ cat(c(sent_1, py$sent_2))
 hi="world"
 print(r.hi,hi) 
 
-sent_2 = "Over the Lazy Dog"
+sent_2 = "and a Happy New Year"
 print(r.sent_1,sent_2)
+```
+```{r}
+# r code 
+cat(c(hi, py$hi))
+
+cat(c(sent_1, py$sent_2))
 ```
 
 *Under the {R} section, by using py$, I was able to access Python-defined objects. Similarly, under the {python} section, by using r., I was able to access the R-defined objects. In doing so, I was able to share objects between R and python.*
