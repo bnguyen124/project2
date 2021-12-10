@@ -1837,7 +1837,7 @@ for (i in 1:k) {
 summarize_all(diags, mean)</code></pre>
 <pre><code>##       acc    sens    spec     ppv      f1      ba     auc
 ## 1 0.81327 0.49227 0.92001 0.66238 0.55708 0.70616 0.85267</code></pre>
-<p><em>The auc for the linear classifer model is 0.8531, therefore the model is considered excellent.The auc for the 10-fold Cross-Validation (CV) of linear classifier mocel is 0.85267, therefore this model is also considered excellent. There is not a significant noticeable decrease in AUC when predicting out of sample, the auc here decreased ever so slightly from the auc of the linear classifer model. There are no signs of overfitting.</em></p>
+<p><em>The auc for the linear classifer model is 0.8531, therefore the model is considered good.The auc for the 10-fold Cross-Validation (CV) of linear classifier mocel is 0.85267, therefore this model is also considered good. There is not a significant noticeable decrease in AUC when predicting out of sample, the auc here decreased ever so slightly from the auc of the linear classifer model. There are no signs of overfitting.</em></p>
 </div>
 <div id="non-parametric-classifier" class="section level3">
 <h3>Non-Parametric Classifier</h3>
@@ -1904,7 +1904,7 @@ for (i in 1:k) {
 summarize_all(diags, mean)</code></pre>
 <pre><code>##      acc    sens   spec     ppv      f1      ba     auc
 ## 1 0.8149 0.25892 0.9956 0.95263 0.40056 0.62725 0.88048</code></pre>
-<p><em>The auc for the non-parametric classifier (k-nearest-neighbors (kNN)) model is 0.9188, therefore the model is considered excellent.The auc for the 10-fold Cross-Validation (CV) of non-parametric Classifier (k-nearest-neighbors (kNN)) model is 0.88048, therefore this model is also considered excellent. There is not a significant noticeable decrease in AUC when predicting out of sample, the auc here decreased ever so slightly from the auc of the linear classifer model. There are no signs of overfitting. Here, the non-parametric classifier model performs much better compare with the linear model in its cross-validation performance, yielding a higher auc</em></p>
+<p><em>The auc for the non-parametric classifier (k-nearest-neighbors (kNN)) model is 0.9188, therefore the model is considered excellent.The auc for the 10-fold Cross-Validation (CV) of non-parametric Classifier (k-nearest-neighbors (kNN)) model is 0.88048, therefore this model is considered good. There is not a significant noticeable decrease in AUC when predicting out of sample, the auc here decreased ever so slightly from the auc of the linear classifer model. There are no signs of overfitting. Here, the non-parametric classifier model performs much better compare with the linear model in its cross-validation performance, yielding a higher auc</em></p>
 </div>
 <div id="regressionnumeric-prediction" class="section level3">
 <h3>Regression/Numeric Prediction</h3>
@@ -1987,7 +1987,7 @@ print(r.sent_1,sent_2)</code></pre>
 </div>
 <div id="concluding-remarks" class="section level3">
 <h3>Concluding Remarks</h3>
-<p>Conclusively, upon doing data mining, data classification, and data prediction, I was able to further explore the informative natural grouping in the dataset and further analyze them to interpret their relationships. All in all, the Area Under the ROC Curve (AUC) results from the different classifier models were shown to be excellent.</p>
+<p>Conclusively, upon doing data mining, data classification, and data prediction, I was able to further explore the informative natural grouping in the dataset and further analyze them to interpret their relationships. All in all, the Area Under the ROC Curve (AUC) results from the different classifier models were shown to be good and great. Therefore, we can interpret the AUC as the probability that a randomly selected person from a state allowing guns has a higher rate of crimes than a randomly selected person from a state not allowing guns.</p>
 </div>
 </div>
 </div>
