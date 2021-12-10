@@ -46,92 +46,295 @@ class_diag <- function(score, truth, positive, cutoff=.5){
 
 # Mining, Classification, Prediction
 
-## Name and EID here
+## Bao-Tran Nguyen, bnn428
 
 ### Introduction 
 
-Paragraph or two introducing your datasets and variables, why they are interesting to you, etc. See instructions for more information
+
+This project employ a dataset acquired from the website  "https://vincentarelbundock.github.io/Rdatasets/datasets.html", which explores the relationship between guns and their influence on crimes such as violence, murder, and robberies. The dataset, "Guns," contains a balanced panel of data on 50 US states, plus the District of Columbia (for a total of 51 states) from 1977 through 1999. This data was recorded to illustrate.This dataset contains 13 variables, including state, year, violent crime rate, murder rate, robbery rate, incarceration rate in the state in the previous year, percent of state population that is African-American, percent of state population that is Caucasian, percent of state population that is male, state population, real per capita personal income in the state, population per square mile of land area, and shall carry law factor. With many variables in this dataset, however, this project will primarily focus on the "shall carry law factor" (yes/no), "violent" crime rate, and "murder"crime rate. There are two observations per group for the categorical/binary variables. 
+
 
 ```{R}
 library(tidyverse)
 # read your datasets in here, e.g., with read_csv()
+Guns <- read_csv("Guns.csv")
+Guns 
 
-# if your dataset needs tidying, do so here
+#Dataset (only numeric variables)
+set.seed(322) 
+num.guns <- Guns %>% select_if(is.numeric) %>% dplyr::select(-'X1' )
+num.guns
 
-# any other code here
+
+
 ```
 
 ### Cluster Analysis
 
-```{R}
-library(cluster)
-# clustering code here
-```
 
-Discussion of clustering here
-    
-    
+```{R}
+library(cluster) #load the cluster package
+
+# PAM clustering code 
+
+sil_width<-vector() #create empty vector
+
+for(i in 2:10){
+kmeansol<- kmeans(num.guns,centers=i)
+sil<-silhouette(kmeansol$cluster, dist(num.guns))
+sil_width[i] <- mean(sil[,3])
+}
+
+ggplot()+geom_line(aes(x=1:10, y=sil_width))+scale_x_continuous(name="k" ,breaks=1:10)
+
+gun_pam <- num.guns %>% pam(k = 2)
+gun_pam$silinfo$avg.width
+gun_pam
+
+
+#Clusters Visualization
+
+library(GGally)
+
+
+Guns%>% ggplot(aes(murder,violent,color=law)) + geom_point()
+
+
+clust <- num.guns %>% mutate(cluster = as.factor(gun_pam$clustering))
+clust %>% ggpairs(columns = 2:7, aes(color = cluster))
+
+
+#Summarize Cluster
+clust %>% group_by(cluster) %>% summarize_if(is.numeric,mean,na.rm=T)
+
+#Final Medoids
+Guns %>% select(-'X1') %>%slice(gun_pam$id.med)
+
+
+```
+*Between the two clusters, 'violent' shows the greatest difference and 'murder' shows the least difference.Cluster 1 showed higher violent and murder rates than Cluster 2; however, Cluster 1 has lower robbery rates than Cluster 2. When only considering violent, murder, and robbery, murder showed the least difference between the two clusters and violent showed the greatest difference.The overall average silhouette width after running the analysis is 0.5449277, which is reasonable cluster structure solution since it is between 0.51 and 0.70.*
+
 ### Dimensionality Reduction with PCA
 
 ```{R}
-# PCA code here
-```
+# PCA code 
+pca1 <- princomp(num.guns, cor = T)
+summary(pca1, loadings = T)
+pca1$scores %>% cor %>% round(10)
 
-Discussions of PCA here. 
+guns_pca <- princomp(num.guns %>% scale())
+guns_pca %>% names()
+
+#Visualization of PC scores
+pca1df<-data.frame(PC1=pca1$scores[,1],PC2=pca1$scores[,2]) %>% mutate (murder = Guns$murder)
+ggplot(pca1df, aes(PC1, PC2)) + geom_point(aes(color = murder))
+
+library(factoextra)
+fviz_pca_biplot(guns_pca)
+```
+*In terms of the original variables, PC1 represents strength of the crimes and measures the overall rate scores (high score vs. low score);PC2 represents year/prisoners/cauc/income rate score vs murder/robbery/afam/density score (high score = high prisoners/cauc/income rate but low  murder/robbery/afam/density and vice versa); PC3 represents year/prisoners/afam/density rate score vs violent/robbery/cauc/population/income score (high score = high year/prisoners/afam/density but low violent/robbery/cauc/population/income and vice versa); PC4 represents year/afam/population rate vs violent/murder/robbery/cauc/density score (high score = high year/afam/population but low violent/murder/robbery/cauc/density and vice versa); PC5 represents year/violent/murder/prisoners/population rate vs robbery/afam/male/income/density score (high score = high year/violent/murder/prisonesr/population but low robbery/afam/male/income/density and vice versa);PC 6 represents murder/prisoners/cauc/male/income rate vs robbery/density score (high score = high murder/prisoner/cauc/male/income but low robbery/density and vice versa);PC 7 represents prisoners/male/population/density rate vs violent/robbery score (high score = high prisoners/male/population/density but low violent/robbery and vice versa); PC 8 represents year/violent/robbery/prisoners/afam/cauc/density rate vs murder/income score (high score = high year/violent/robbery/prisoners/afam/cauc/density but low murder/income and vice versa); PC 9 represents year/murder/cauc/male rate vs prisoners score (high score = high year/murder/cauc/male but low prisoners rate and vice versa); PC 10 represents prisoners/robbery rate vs violent/density score (high score = high prisoners/robbery rate but low violent/density rate and vice versa); PC 11 represents year/male rate vs afam/cauc score (high score = high year/male but low afam/cauc and vice versa); 85% of the total variance in this dataset is explained by these PCs.*
 
 ###  Linear Classifier
 
+
 ```{R}
-# linear classifier code here
+# linear classifier (logistic regression model fit)
+logistic_fit <- glm(data=Guns,law=="yes" ~ year + violent + murder + robbery + prisoners + afam + cauc + male + population + income + density,  family="binomial")
+logistic_fit 
+
+#predictions
+prob_reg <- predict(logistic_fit, type ="response")
+class_diag(prob_reg, Guns$law, positive="yes")
+prob_reg
+
+
+#Confusion Matrix
+y<-Guns$law
+x<-Guns$murder
+y<- factor(y, levels=c("yes","no"))
+
+accuracy <- vector()
+cutoff <- 1:10 
+for(i in cutoff){
+  y_hat <- ifelse(x>i, "yes", "no")
+  accuracy[i] <- mean(y==y_hat) 
+}
+qplot(y=accuracy)+geom_line()+scale_x_continuous(breaks=1:10)
+
+cutoff[which.max(accuracy)]
+
+y_hat <- factor(y_hat, levels=c("yes","no"))
+table(actual = y, predicted = y_hat) %>% addmargins
+
+
+
 ```
 
 ```{R}
-# cross-validation of linear classifier here
-```
+# 10-fold Cross-Validation of Linear Classifier 
 
-Discussion here
+set.seed(322)
+k = 10
+
+data <- sample_frac(Guns)  #randomly order rows
+folds <- rep(1:k, length.out = nrow(data))  #create folds
+
+diags <- NULL
+
+i = 1
+for (i in 1:k) {
+    # create training and test sets
+    train <- data[folds != i, ]
+    test <- data[folds == i, ]
+    truth <- test$law
+    
+    # train model
+    fit <- glm(data=Guns,law=="yes" ~ year + violent + murder + robbery + prisoners + afam + cauc + male + population + income + density,  family="binomial")  ### SPECIFY THE LOGISTIC REGRESSION MODEL FIT TO THE TRAINING SET HERE
+    
+    # test model
+    probs <- predict(fit, newdata = test, type = "response")  ### GET PREDICTIONS FROM THE TRAINED MODEL ON THE TEST SET HERE
+    
+    # get performance metrics for each fold
+    diags <- rbind(diags, class_diag(probs, truth, positive = "yes"))
+}
+
+# Average Performance Metrics Across All Folds
+summarize_all(diags, mean)
+```
+*The auc for the linear classifer model is 0.8531, therefore the model is considered excellent.The auc for the 10-fold Cross-Validation (CV) of linear classifier mocel is 0.85267, therefore this model is also considered excellent. There is not a significant noticeable decrease in AUC when predicting out of sample, the auc here decreased ever so slightly from the auc of the linear classifer model. There are no signs of overfitting.*
 
 ### Non-Parametric Classifier
 
+
 ```{R}
 library(caret)
-# non-parametric classifier code here
+# Non-parametric Classifier Code (k-nearest-neighbors (kNN))
+knn_fit <- knn3(Guns$law ~  violent + murder + robbery + prisoners + afam + cauc + male + population + income + density, data = Guns) 
+knn_fit
+
+prob_knn <- predict(knn_fit, newdata = Guns)[, 2]
+prob_knn
+class_diag(prob_knn, Guns$law, positive = "yes")
+
+data.frame(prob_knn, truth = Guns$law) %>% ggplot(aes(prob_knn, color = truth)) + geom_density(aes(fill=as.factor(truth)))
+
+# Confusion Matrix
+table(actual = Guns$law, predicted = (prob_knn) > 0.5) %>% addmargins  
+
+
 ```
 
 ```{R}
-# cross-validation of np classifier here
+# Cross-Validation of NP Classifier Here
+set.seed(322)
+k = 10
+
+data <- sample_frac(Guns)  #randomly order rows
+folds <- rep(1:k, length.out = nrow(data))  #create folds
+
+diags <- NULL
+
+i = 1
+for (i in 1:k) {
+    # create training and test sets
+    train <- data[folds != i, ]
+    test <- data[folds == i, ]
+    truth <- test$law
+    
+    # train model
+    fit <- knn3(law == "yes" ~ year + violent + murder + robbery + prisoners + afam + cauc + male + population + income + density, data = Guns, 
+        k = 10)  ### SPECIFY THE KNN MODEL FIT TO THE TRAINING SET HERE
+    
+    # test model
+    probs <- predict(fit, test)[, 2]  ### GET PREDICTIONS FROM THE TRAINED MODEL ON THE TEST SET HERE
+    
+    # get performance metrics for each fold
+    diags <- rbind(diags, class_diag(probs, truth, positive = "yes"))
+}
+
+# Average Performance Metrics Across All Folds
+summarize_all(diags, mean)
 ```
 
-Discussion
+*The auc for the non-parametric classifier (k-nearest-neighbors (kNN)) model is 0.9188, therefore the model is considered excellent.The auc for the 10-fold Cross-Validation (CV) of non-parametric Classifier  (k-nearest-neighbors (kNN)) model is 0.88048, therefore this model is also considered excellent. There is not a significant noticeable decrease in AUC when predicting out of sample, the auc here decreased ever so slightly from the auc of the linear classifer model. There are no signs of overfitting. Here, the non-parametric classifier model performs much better compare with the linear model in its cross-validation performance, yielding a higher auc*
 
 
 ### Regression/Numeric Prediction
 
 ```{R}
-# regression model code here
+# Linear Regression Model Code
+library("rpart.plot")
+
+fit <- train(murder ~ . , data=Guns, method="rpart")
+fit
+rpart.plot(fit$finalModel,digits=4)
+
+#MSE for the overall dataset
+fit1<-lm(murder~.,data=Guns)
+msehat<- predict(fit1)
+mean((Guns$murder-msehat)^2) #MSE
 ```
 
 ```{R}
-# cross-validation of regression model here
+# Cross-Validation of Regression Model
+set.seed(1234)
+k=10 #choose number of folds
+
+data<-Guns[sample(nrow(Guns)),] #randomly order rows
+folds<-cut(seq(1:nrow(Guns)),breaks=k,labels=F) #create folds
+
+diags<-NULL
+for(i in 1:k){
+  train<-data[folds!=i,]
+  test<-data[folds==i,]
+  
+  ## Fit linear regression model to training set
+  fit<-lm(murder~.,data=Guns)
+  
+  ## Get predictions/y-hats on test set (fold i)
+  yhat<-predict(fit,newdata=test)
+  
+  ## Compute prediction error  (MSE) for fold i
+  diags<-mean((test$murder-yhat)^2) 
+}
+
+## Average MSE across all folds (much higher error)!
+mean(diags) 
+
 ```
 
-Discussion
+*The measure of prediction error is 4.413099, which is quite small. The average MSE across my k testing folds is 4.070139. There is no overfitting because MSE is lower in Cross-Validation.*
 
 ### Python 
 
 ```{R}
 library(reticulate)
+use_python("/usr/bin/python3", required = F)
+
+# r code 
+hi <- "Hello"
+cat(c(hi, py$hi))
+
+sent_1 <- " The Quick Brown Fox Jumps"
+cat(c(sent_1, py$sent_2))
 ```
 
 ```{python}
-# python code here
+# python code 
+hi="world"
+print(r.hi,hi) 
+
+sent_2 = "Over the Lazy Dog"
+print(r.sent_1,sent_2)
 ```
 
-Discussion
+*Under the {R} section, by using py$, I was able to access Python-defined objects. Similarly, under the {python} section, by using r., I was able to access the R-defined objects. In doing so, I was able to share objects between R and python.*
+
+
 
 ### Concluding Remarks
 
-Include concluding remarks here, if any
+Conclusively, upon doing data mining, data classification, and data prediction, I was able to further explore the informative natural grouping in the dataset and further analyze them to interpret their relationships. All in all, the Area Under the ROC Curve (AUC) results from the different classifier models were shown to be excellent. 
 
 
 
